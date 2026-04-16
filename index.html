@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
 /* ===== 版本 ===== */
-/* APP_VERSION = "1.1.0" */
+/* APP_VERSION = "1.1.1" */
 
 :root {
   --yellow: #FFD600;
@@ -204,9 +204,16 @@ body {
   display: block;
   animation: popIn 0.35s cubic-bezier(0.17, 0.67, 0.29, 1.3);
 }
+.result-bubble.hiding {
+  animation: popOut 0.4s cubic-bezier(0.55, 0.06, 0.68, 0.19) forwards;
+}
 @keyframes popIn {
   0% { transform: scale(0.5) rotate(-2deg); opacity: 0; }
   100% { transform: scale(1) rotate(-0.5deg); opacity: 1; }
+}
+@keyframes popOut {
+  0% { transform: scale(1) rotate(-0.5deg); opacity: 1; }
+  100% { transform: scale(0.5) rotate(2deg); opacity: 0; }
 }
 .result-bubble::before {
   content: '';
@@ -328,7 +335,7 @@ body {
 
 <!-- 标题横幅 -->
 <div class="header">
-  <div class="version">v1.1.0</div>
+  <div class="version">v1.1.1</div>
   <h1>★ SMOKE PATROL ★</h1>
   <div class="subtitle">烟量巡逻官</div>
 </div>
@@ -366,7 +373,7 @@ body {
 
 <script>
 // ===== 版本号 =====
-const APP_VERSION = "1.1.0";
+const APP_VERSION = "1.1.1";
 
 // ===== 数据管理 =====
 const STORAGE_KEY = "smoke_patrol_data";
@@ -421,6 +428,21 @@ const statusToday = document.getElementById("statusToday");
 const toast = document.getElementById("toast");
 
 let countdownTimer = null;
+let autoHideTimer = null;
+
+function hideBubble() {
+  if (autoHideTimer) { clearTimeout(autoHideTimer); autoHideTimer = null; }
+  if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+  resultBubble.classList.add("hiding");
+  setTimeout(function() {
+    resultBubble.classList.remove("show", "hiding");
+  }, 400);
+}
+
+function scheduleAutoHide() {
+  if (autoHideTimer) clearTimeout(autoHideTimer);
+  autoHideTimer = setTimeout(hideBubble, 10000);
+}
 
 // ===== 初始化 =====
 function init() {
@@ -507,6 +529,7 @@ function showCanSmoke(data) {
     resultText.innerHTML += '<br><span style="font-size:0.95rem;color:#999">本轮配额已用完</span>';
   }
   countdownEl.textContent = "";
+  scheduleAutoHide();
 }
 
 function showCannotSmoke(data, now) {
@@ -540,6 +563,7 @@ function showCannotSmoke(data, now) {
 
   updateCountdown();
   countdownTimer = setInterval(updateCountdown, 1000);
+  scheduleAutoHide();
 }
 
 // ===== 启动 =====
