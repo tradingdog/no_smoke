@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Bungee&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
 /* ===== 版本 ===== */
-/* APP_VERSION = "1.1.2" */
+/* APP_VERSION = "1.2.0" */
 
 :root {
   --yellow: #FFD600;
@@ -335,7 +335,7 @@ body {
 
 <!-- 标题横幅 -->
 <div class="header">
-  <div class="version">v1.1.2</div>
+  <div class="version">v1.2.0</div>
   <h1>★ SMOKE PATROL ★</h1>
   <div class="subtitle">烟量巡逻官</div>
 </div>
@@ -373,7 +373,7 @@ body {
 
 <script>
 // ===== 版本号 =====
-const APP_VERSION = "1.1.2";
+const APP_VERSION = "1.2.0";
 
 // ===== 数据管理 =====
 const STORAGE_KEY = "smoke_patrol_data";
@@ -382,8 +382,8 @@ function getDefaultData() {
   return {
     intervalMinutes: 30,
     allowedCount: 1,
-    windowStartTime: null,
-    remainingInWindow: 0,
+    tokenCount: 0,
+    lastAccumulateTime: Date.now(),
     todaySmoked: 0,
     todayDate: getTodayStr()
   };
@@ -399,6 +399,15 @@ function loadData() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return getDefaultData();
     const data = JSON.parse(raw);
+
+    // 兼容旧版本字段，迁移到累积配额模型
+    if (typeof data.tokenCount !== "number") {
+      data.tokenCount = Math.max(0, Number(data.remainingInWindow || 0));
+    }
+    if (!data.lastAccumulateTime) {
+      data.lastAccumulateTime = data.windowStartTime || Date.now();
+    }
+
     // 跨天重置今日计数
     if (data.todayDate !== getTodayStr()) {
       data.todaySmoked = 0;
@@ -412,6 +421,21 @@ function loadData() {
 
 function saveData(data) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function accumulateQuota(data, now) {
+  const intervalMs = data.intervalMinutes * 60 * 1000;
+  if (!data.lastAccumulateTime) {
+    data.lastAccumulateTime = now;
+    return;
+  }
+
+  const elapsed = now - data.lastAccumulateTime;
+  if (elapsed < intervalMs) return;
+
+  const cycles = Math.floor(elapsed / intervalMs);
+  data.tokenCount += cycles * data.allowedCount;
+  data.lastAccumulateTime += cycles * intervalMs;
 }
 
 // ===== DOM 引用 =====
@@ -447,6 +471,8 @@ function scheduleAutoHide() {
 // ===== 初始化 =====
 function init() {
   const data = loadData();
+  accumulateQuota(data, Date.now());
+  saveData(data);
   inputMinutes.value = data.intervalMinutes;
   inputCount.value = data.allowedCount;
   updateStatusBar(data);
@@ -475,9 +501,9 @@ btnSave.addEventListener("click", function() {
   const data = loadData();
   data.intervalMinutes = mins;
   data.allowedCount = cnt;
-  // 更换规则时重置窗口
-  data.windowStartTime = null;
-  data.remainingInWindow = 0;
+  // 更换规则时重置累积计时与可抽配额
+  data.tokenCount = 0;
+  data.lastAccumulateTime = Date.now();
   saveData(data);
   updateStatusBar(data);
   showToast("💾 设置已保存！");
@@ -492,27 +518,22 @@ btnCheck.addEventListener("click", function() {
 
   const data = loadData();
   const now = Date.now();
+  accumulateQuota(data, now);
+  saveData(data);
 
-  // 情况1: 从未开启过窗口 / 窗口时间已过
-  if (!data.windowStartTime || (now - data.windowStartTime >= data.intervalMinutes * 60 * 1000)) {
-    // 开启新窗口
-    data.windowStartTime = now;
-    data.remainingInWindow = data.allowedCount;
+  if (data.tokenCount > 0) {
     showCanSmoke(data);
+    return;
   }
-  // 情况2: 窗口内还有剩余
-  else if (data.remainingInWindow > 0) {
-    showCanSmoke(data);
-  }
-  // 情况3: 窗口内配额用完，还在冷却
-  else {
-    showCannotSmoke(data, now);
-  }
+
+  showCannotSmoke(data);
 });
 
 function showCanSmoke(data) {
+  const availableNow = data.tokenCount;
+
   // 扣减配额并记录
-  data.remainingInWindow -= 1;
+  data.tokenCount -= 1;
   data.todaySmoked += 1;
   saveData(data);
   updateStatusBar(data);
@@ -522,17 +543,17 @@ function showCanSmoke(data) {
   resultBubble.classList.add("show");
 
   resultIcon.textContent = "✅";
-  resultText.innerHTML = '<span class="highlight-ok">可以抽 1 支烟！</span>';
-  if (data.remainingInWindow > 0) {
-    resultText.innerHTML += '<br><span style="font-size:0.95rem;color:#666">本轮还剩 ' + data.remainingInWindow + ' 支配额</span>';
+  resultText.innerHTML = '<span class="highlight-ok">现在最多可抽 ' + availableNow + ' 支烟！</span>';
+  if (data.tokenCount > 0) {
+    resultText.innerHTML += '<br><span style="font-size:0.95rem;color:#666">已记录本次抽烟，剩余可抽 ' + data.tokenCount + ' 支</span>';
   } else {
-    resultText.innerHTML += '<br><span style="font-size:0.95rem;color:#999">本轮配额已用完</span>';
+    resultText.innerHTML += '<br><span style="font-size:0.95rem;color:#999">已记录本次抽烟，当前配额用完</span>';
   }
   countdownEl.textContent = "";
   scheduleAutoHide();
 }
 
-function showCannotSmoke(data, now) {
+function showCannotSmoke(data) {
   resultBubble.classList.remove("show");
   void resultBubble.offsetWidth;
   resultBubble.classList.add("show");
@@ -540,15 +561,22 @@ function showCannotSmoke(data, now) {
   resultIcon.textContent = "🚫";
 
   function updateCountdown() {
-    const elapsed = Date.now() - data.windowStartTime;
-    const total = data.intervalMinutes * 60 * 1000;
-    const remain = total - elapsed;
+    const now = Date.now();
+    const intervalMs = data.intervalMinutes * 60 * 1000;
+    const elapsed = now - data.lastAccumulateTime;
+    const remain = intervalMs - elapsed;
 
     if (remain <= 0) {
       clearInterval(countdownTimer);
       countdownTimer = null;
+
+      const freshData = loadData();
+      accumulateQuota(freshData, now);
+      saveData(freshData);
+      updateStatusBar(freshData);
+
       resultIcon.textContent = "✅";
-      resultText.innerHTML = '<span class="highlight-ok">时间到！可以点击按钮抽烟了！</span>';
+      resultText.innerHTML = '<span class="highlight-ok">时间到！现在最多可抽 ' + freshData.tokenCount + ' 支烟！</span>';
       countdownEl.textContent = "";
       return;
     }
