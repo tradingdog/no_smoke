@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smoke Patrol ★ 烟量巡逻官</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Noto+Sans+SC:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+/* ===== 版本 ===== */
+/* APP_VERSION = "1.0.0" */
+
+:root {
+  --yellow: #FFD600;
+  --red: #E53935;
+  --blue: #29B6F6;
+  --dark: #1A1A2E;
+  --white: #FFF8E1;
+  --green: #66BB6A;
+  --border: 4px solid #1A1A2E;
+  --shadow: 5px 5px 0px #1A1A2E;
+  --radius: 18px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Noto Sans SC', 'Bangers', sans-serif;
+  background: var(--yellow);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  /* 半调网点背景 */
+  background-image:
+    radial-gradient(circle, #00000010 1.2px, transparent 1.2px);
+  background-size: 16px 16px;
+}
+
+/* ===== 标题横幅 ===== */
+.header {
+  background: var(--red);
+  border: var(--border);
+  box-shadow: var(--shadow);
+  border-radius: var(--radius);
+  padding: 18px 40px;
+  text-align: center;
+  margin-bottom: 24px;
+  transform: rotate(-1deg);
+  position: relative;
+}
+.header h1 {
+  font-family: 'Bangers', cursive;
+  font-size: 2.6rem;
+  color: var(--yellow);
+  text-shadow: 3px 3px 0 var(--dark);
+  letter-spacing: 3px;
+}
+.header .version {
+  font-family: 'Bangers', cursive;
+  font-size: 1rem;
+  color: var(--white);
+  opacity: 0.85;
+}
+.header .subtitle {
+  font-size: 1.1rem;
+  color: var(--white);
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+/* ===== 设置面板 ===== */
+.settings-panel {
+  background: var(--white);
+  border: var(--border);
+  box-shadow: var(--shadow);
+  border-radius: var(--radius);
+  padding: 24px 30px;
+  margin-bottom: 24px;
+  width: 100%;
+  max-width: 460px;
+  transform: rotate(0.5deg);
+}
+.settings-panel h2 {
+  font-family: 'Bangers', cursive;
+  font-size: 1.5rem;
+  color: var(--red);
+  text-shadow: 2px 2px 0 #FFD60066;
+  margin-bottom: 16px;
+  text-align: center;
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--dark);
+  margin-bottom: 16px;
+}
+.settings-row input {
+  width: 72px;
+  height: 44px;
+  text-align: center;
+  font-size: 1.3rem;
+  font-weight: 900;
+  border: 3px solid var(--dark);
+  border-radius: 12px;
+  background: var(--yellow);
+  color: var(--dark);
+  outline: none;
+  box-shadow: 2px 2px 0 var(--dark);
+  transition: transform 0.15s;
+}
+.settings-row input:focus {
+  transform: scale(1.08);
+  border-color: var(--red);
+}
+.btn-save {
+  display: block;
+  margin: 0 auto;
+  background: var(--blue);
+  color: var(--white);
+  border: 3px solid var(--dark);
+  border-radius: 14px;
+  padding: 10px 32px;
+  font-size: 1.15rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 var(--dark);
+  transition: all 0.12s;
+  font-family: 'Noto Sans SC', sans-serif;
+}
+.btn-save:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0 var(--dark);
+}
+.btn-save:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--dark);
+}
+
+/* ===== 大按钮区 ===== */
+.action-area {
+  margin-bottom: 24px;
+  width: 100%;
+  max-width: 460px;
+  display: flex;
+  justify-content: center;
+}
+.btn-check {
+  background: var(--red);
+  color: var(--yellow);
+  border: 4px solid var(--dark);
+  border-radius: 24px;
+  padding: 22px 44px;
+  font-size: 1.7rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 6px 6px 0 var(--dark);
+  transition: all 0.13s;
+  font-family: 'Noto Sans SC', sans-serif;
+  position: relative;
+  /* 爆炸星形用 CSS 替代 */
+  text-shadow: 2px 2px 0 #00000033;
+  animation: pulse 2.5s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.04) rotate(-0.5deg); }
+}
+.btn-check:hover {
+  transform: scale(1.08) rotate(-1deg) !important;
+  box-shadow: 8px 8px 0 var(--dark);
+  animation: none;
+}
+.btn-check:active {
+  transform: scale(0.96) rotate(0deg) !important;
+  box-shadow: 2px 2px 0 var(--dark);
+  animation: none;
+}
+
+/* ===== 结果气泡 ===== */
+.result-bubble {
+  background: var(--white);
+  border: var(--border);
+  box-shadow: var(--shadow);
+  border-radius: var(--radius);
+  padding: 28px 30px;
+  width: 100%;
+  max-width: 460px;
+  text-align: center;
+  position: relative;
+  margin-bottom: 24px;
+  /* 漫画对话气泡尖角 */
+  transform: rotate(-0.5deg);
+  display: none;
+}
+.result-bubble.show {
+  display: block;
+  animation: popIn 0.35s cubic-bezier(0.17, 0.67, 0.29, 1.3);
+}
+@keyframes popIn {
+  0% { transform: scale(0.5) rotate(-2deg); opacity: 0; }
+  100% { transform: scale(1) rotate(-0.5deg); opacity: 1; }
+}
+.result-bubble::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  margin-left: -16px;
+  border: 10px solid transparent;
+  border-bottom: 14px solid var(--dark);
+}
+.result-bubble::after {
+  content: '';
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  margin-left: -12px;
+  border: 8px solid transparent;
+  border-bottom: 11px solid var(--white);
+}
+.result-icon {
+  font-size: 3rem;
+  margin-bottom: 8px;
+}
+.result-text {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--dark);
+  line-height: 1.6;
+}
+.result-text .highlight-ok {
+  color: var(--green);
+}
+.result-text .highlight-no {
+  color: var(--red);
+}
+.countdown {
+  font-family: 'Bangers', cursive;
+  font-size: 2.2rem;
+  color: var(--red);
+  text-shadow: 2px 2px 0 #FFD60088;
+  margin-top: 6px;
+  letter-spacing: 2px;
+}
+
+/* ===== 底部状态栏 ===== */
+.status-bar {
+  background: var(--dark);
+  border: 3px solid var(--dark);
+  border-radius: 14px;
+  padding: 12px 24px;
+  width: 100%;
+  max-width: 460px;
+  display: flex;
+  justify-content: space-around;
+  color: var(--yellow);
+  font-weight: 700;
+  font-size: 0.95rem;
+  box-shadow: 4px 4px 0 #00000044;
+}
+.status-bar span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ===== 保存成功提示 ===== */
+.toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-80px);
+  background: var(--green);
+  color: var(--white);
+  border: 3px solid var(--dark);
+  border-radius: 14px;
+  padding: 12px 28px;
+  font-weight: 900;
+  font-size: 1.1rem;
+  box-shadow: 4px 4px 0 var(--dark);
+  z-index: 999;
+  opacity: 0;
+  transition: all 0.35s cubic-bezier(0.17, 0.67, 0.29, 1.3);
+  pointer-events: none;
+}
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* ===== 响应式 ===== */
+@media (max-width: 520px) {
+  .header h1 { font-size: 1.8rem; }
+  .btn-check { font-size: 1.3rem; padding: 16px 28px; }
+  .result-text { font-size: 1.15rem; }
+  .countdown { font-size: 1.7rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- Toast 提示 -->
+<div class="toast" id="toast">💾 设置已保存！</div>
+
+<!-- 标题横幅 -->
+<div class="header">
+  <div class="version">v1.0.0</div>
+  <h1>★ SMOKE PATROL ★</h1>
+  <div class="subtitle">烟量巡逻官</div>
+</div>
+
+<!-- 设置面板 -->
+<div class="settings-panel">
+  <h2>⚙️ SETTINGS 规则设置</h2>
+  <div class="settings-row">
+    <span>每</span>
+    <input type="number" id="inputMinutes" min="1" max="9999" value="30">
+    <span>分钟，可抽</span>
+    <input type="number" id="inputCount" min="1" max="99" value="1">
+    <span>支烟</span>
+  </div>
+  <button class="btn-save" id="btnSave">💾 保存设置</button>
+</div>
+
+<!-- 大按钮 -->
+<div class="action-area">
+  <button class="btn-check" id="btnCheck">👊 现在能抽烟吗？</button>
+</div>
+
+<!-- 结果气泡 -->
+<div class="result-bubble" id="resultBubble">
+  <div class="result-icon" id="resultIcon"></div>
+  <div class="result-text" id="resultText"></div>
+  <div class="countdown" id="countdown"></div>
+</div>
+
+<!-- 底部状态栏 -->
+<div class="status-bar">
+  <span>📏 当前规则：<b id="statusRule">--</b></span>
+  <span>🚬 今日已抽：<b id="statusToday">0</b> 支</span>
+</div>
+
+<script>
+// ===== 版本号 =====
+const APP_VERSION = "1.0.0";
+
+// ===== 数据管理 =====
+const STORAGE_KEY = "smoke_patrol_data";
+
+function getDefaultData() {
+  return {
+    intervalMinutes: 30,
+    allowedCount: 1,
+    windowStartTime: null,
+    remainingInWindow: 0,
+    todaySmoked: 0,
+    todayDate: getTodayStr()
+  };
+}
+
+function getTodayStr() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return getDefaultData();
+    const data = JSON.parse(raw);
+    // 跨天重置今日计数
+    if (data.todayDate !== getTodayStr()) {
+      data.todaySmoked = 0;
+      data.todayDate = getTodayStr();
+    }
+    return data;
+  } catch(e) {
+    return getDefaultData();
+  }
+}
+
+function saveData(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+// ===== DOM 引用 =====
+const inputMinutes = document.getElementById("inputMinutes");
+const inputCount = document.getElementById("inputCount");
+const btnSave = document.getElementById("btnSave");
+const btnCheck = document.getElementById("btnCheck");
+const resultBubble = document.getElementById("resultBubble");
+const resultIcon = document.getElementById("resultIcon");
+const resultText = document.getElementById("resultText");
+const countdownEl = document.getElementById("countdown");
+const statusRule = document.getElementById("statusRule");
+const statusToday = document.getElementById("statusToday");
+const toast = document.getElementById("toast");
+
+let countdownTimer = null;
+
+// ===== 初始化 =====
+function init() {
+  const data = loadData();
+  inputMinutes.value = data.intervalMinutes;
+  inputCount.value = data.allowedCount;
+  updateStatusBar(data);
+}
+
+function updateStatusBar(data) {
+  statusRule.textContent = data.intervalMinutes + "分钟/" + data.allowedCount + "支";
+  statusToday.textContent = data.todaySmoked;
+}
+
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add("show");
+  setTimeout(() => toast.classList.remove("show"), 1800);
+}
+
+// ===== 保存设置 =====
+btnSave.addEventListener("click", function() {
+  let mins = parseInt(inputMinutes.value);
+  let cnt = parseInt(inputCount.value);
+  if (isNaN(mins) || mins < 1) mins = 1;
+  if (isNaN(cnt) || cnt < 1) cnt = 1;
+  inputMinutes.value = mins;
+  inputCount.value = cnt;
+
+  const data = loadData();
+  data.intervalMinutes = mins;
+  data.allowedCount = cnt;
+  // 更换规则时重置窗口
+  data.windowStartTime = null;
+  data.remainingInWindow = 0;
+  saveData(data);
+  updateStatusBar(data);
+  showToast("💾 设置已保存！");
+});
+
+// ===== 核心: 检查能否抽烟 =====
+btnCheck.addEventListener("click", function() {
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
+
+  const data = loadData();
+  const now = Date.now();
+
+  // 情况1: 从未开启过窗口 / 窗口时间已过
+  if (!data.windowStartTime || (now - data.windowStartTime >= data.intervalMinutes * 60 * 1000)) {
+    // 开启新窗口
+    data.windowStartTime = now;
+    data.remainingInWindow = data.allowedCount;
+    showCanSmoke(data);
+  }
+  // 情况2: 窗口内还有剩余
+  else if (data.remainingInWindow > 0) {
+    showCanSmoke(data);
+  }
+  // 情况3: 窗口内配额用完，还在冷却
+  else {
+    showCannotSmoke(data, now);
+  }
+});
+
+function showCanSmoke(data) {
+  // 扣减配额并记录
+  data.remainingInWindow -= 1;
+  data.todaySmoked += 1;
+  saveData(data);
+  updateStatusBar(data);
+
+  resultBubble.classList.remove("show");
+  void resultBubble.offsetWidth; // 触发重排以重播动画
+  resultBubble.classList.add("show");
+
+  resultIcon.textContent = "✅";
+  resultText.innerHTML = '<span class="highlight-ok">可以抽 1 支烟！</span>';
+  if (data.remainingInWindow > 0) {
+    resultText.innerHTML += '<br><span style="font-size:0.95rem;color:#666">本轮还剩 ' + data.remainingInWindow + ' 支配额</span>';
+  } else {
+    resultText.innerHTML += '<br><span style="font-size:0.95rem;color:#999">本轮配额已用完</span>';
+  }
+  countdownEl.textContent = "";
+}
+
+function showCannotSmoke(data, now) {
+  resultBubble.classList.remove("show");
+  void resultBubble.offsetWidth;
+  resultBubble.classList.add("show");
+
+  resultIcon.textContent = "🚫";
+
+  function updateCountdown() {
+    const elapsed = Date.now() - data.windowStartTime;
+    const total = data.intervalMinutes * 60 * 1000;
+    const remain = total - elapsed;
+
+    if (remain <= 0) {
+      clearInterval(countdownTimer);
+      countdownTimer = null;
+      resultIcon.textContent = "✅";
+      resultText.innerHTML = '<span class="highlight-ok">时间到！可以点击按钮抽烟了！</span>';
+      countdownEl.textContent = "";
+      return;
+    }
+
+    const remainSec = Math.ceil(remain / 1000);
+    const m = Math.floor(remainSec / 60);
+    const s = remainSec % 60;
+
+    resultText.innerHTML = '<span class="highlight-no">不行！</span>';
+    countdownEl.textContent = m + "分" + String(s).padStart(2, "0") + "秒后可抽 " + data.allowedCount + " 支";
+  }
+
+  updateCountdown();
+  countdownTimer = setInterval(updateCountdown, 1000);
+}
+
+// ===== 启动 =====
+init();
+</script>
+</body>
+</html>
